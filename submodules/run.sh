@@ -6,6 +6,9 @@ function run_test() {
         ./$file
     done
 }
+if [[ ! -d build ]]; then
+   mkdir build
+fi
 cd build
 cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release
 if [[ $? -eq 0 ]]; then
