@@ -1,21 +1,21 @@
 [submodule "submodule/spdlog"]
-	path = submodule/spdlog
+	path = submodules/spdlog
 	url = https://github.com/gabime/spdlog.git
 [submodule "submodule/CPM.cmake"]
-	path = submodule/CPM.cmake
+	path = submodules/CPM.cmake
 	url = https://github.com/TheLartians/CPM.cmake/
 [submodule "submodule/scnlib"]
-	path = submodule/scnlib
+	path = submodules/scnlib
 	url = https://github.com/eliaskosunen/scnlib
 [submodule "submodule/quill"]
-	path = submodule/quill
+	path = submodules/quill
 	url = https://github.com/odygrd/quill
 [submodule "submodule/cista"]
-	path = submodule/cista
+	path = submodules/cista
 	url = https://github.com/felixguendling/cista
 [submodule "submodule/doctest"]
-	path = submodule/doctest
+	path = submodules/doctest
 	url = https://github.com/onqtam/doctest
 [submodule "submodule/fmt"]
-	path = submodule/fmt
+	path = submodules/fmt
 	url = https://github.com/fmtlib/fmt

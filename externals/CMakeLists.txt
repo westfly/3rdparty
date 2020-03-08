@@ -1,0 +1,49 @@
+# 添加第三方依赖包
+cmake_minimum_required(VERSION 3.14)
+project(thirdparty)
+set(CMAKE_CXX_STANDARD 17)
+add_definitions(-std=c++17)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+if(UNIX)
+  option(BUILD_SHARED_LIBS "Build shared libraries(.so)." ON)
+else()
+  set(BUILD_SHARED_LIBS OFF)
+endif()
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING
+	"Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel.")
+set(FETCHCONTENT_QUIET OFF)
+set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/deps/submodels)
+
+include(CPM.cmake/cmake/CPM.cmake)
+set(CPM_DRY_RUN OFF)
+set(CPM_SOURCE_CACHE ${FETCHCONTENT_BASE_DIR})
+macro(MakeAsLibray NAME)
+	if(${NAME}_ADDED)
+	  add_library(${NAME} INTERFACE IMPORTED)
+	  target_include_directories(${NAME} INTERFACE "${NAME_SOURCE_DIR}/include")
+	endif()
+endmacro()
+
+message("${CMAKE_SOURCE_DIR}")
+include(spdlog/check.cmake)
+include(fmt/check.cmake)
+include(quill/check.cmake)
+include(cxxopts/check.cmake)
+include(scnlib/check.cmake)
+include(Catch2/check.cmake)
+macro(add_test_library name libname)
+    set(target_name test_${name})
+    add_executable(
+        ${target_name}
+        test/test_${name}.cpp
+    )
+    target_link_libraries(
+        ${target_name} PRIVATE
+        ${libname}
+    )
+endmacro(add_test_library)
+add_test_library(spdlog spdlog)
+add_test_library(quill quill)
+add_test_library(scnlib scn)
+add_test_library(fmt fmt)
+add_test_library(catch2 Catch2)
