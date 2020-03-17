@@ -3,6 +3,7 @@ string(TOUPPER ${DEP_NAME} UP_DEP_NAME)
 message("${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_LIST_DIR} ${DEP_NAME}")
 set(GIT_URL fmtlib/fmt)
 set(GIT_TAG 6.1.2)
+set(GIT_TAG master)
 set(DEP_PREFIX ${CMAKE_CURRENT_LIST_DIR})
 message("Install @ ${DEP_PREFIX}")
 set(DEP_SOURCE_DIR ${FETCHCONTENT_BASE_DIR}/${DEP_NAME}-src)
@@ -13,7 +14,7 @@ CPMAddPackage(
   NAME              ${DEP_NAME}
   GITHUB_REPOSITORY ${GIT_URL}
   GIT_SHALLOW    	TRUE
-  VERSION           ${GIT_TAG}
+  GIT_TAG           ${GIT_TAG} # not pass version
   CPM_ARGS_GIT_TAG  ${GIT_TAG}
   SOURCE_DIR		${DEP_SOURCE_DIR}
   LOG_DOWNLOAD      ON
