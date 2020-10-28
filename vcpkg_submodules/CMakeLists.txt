@@ -37,3 +37,10 @@ add_test_library(quill quill)
 find_package(GTest CONFIG REQUIRED)
 add_test_library(folly folly GTest::gtest_main Folly::folly)
 add_test_library(xtensor xtensor xtensor)
+find_package(RapidJSON CONFIG REQUIRED)
+
+add_executable(
+    test_rapidjson
+    test/test_rapidjson.cpp
+)
+target_include_directories(test_rapidjson PRIVATE ${RAPIDJSON_INCLUDE_DIRS})
