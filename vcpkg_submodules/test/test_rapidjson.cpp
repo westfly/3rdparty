@@ -1,6 +1,6 @@
 #include <string>
 #include <iostream>
-const std::string kJson = R"({
+std::string kJson = R"({
     "hello": "world",
     "t": true ,
     "f": false,
@@ -20,13 +20,21 @@ int main()
 {
     std::cout << kJson;
     Document document;
-    document.Parse(kJson.data());
+    document.ParseInsitu(const_cast<char*>(kJson.data()));
     const char* str = kJson.data();
     using namespace std::literals;
     auto key = "hello";
     assert(document.HasMember(key));
     assert(document[key].IsString());
     auto sv = document[key].GetString();
-    printf("\nhello = %s\t %p %p %ld\n", sv, sv, str, sv - str);
+    printf("\n%s = %s\t %p %p %ld\n", key, sv, sv, str, sv - str);
+    printf("\njson=%s", kJson.c_str());
+
+
+    auto iter = document.FindMember(key);
+    if (iter != document.MemberEnd()) {
+        printf("\n%s\t === %d\n", iter->value.GetString(), iter->value.GetStringLength());
+    }
+
     return 0;
 }
