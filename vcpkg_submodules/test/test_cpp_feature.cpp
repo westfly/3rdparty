@@ -9,7 +9,8 @@ void test_variant() {
     try {
       std::get<float>(w);
     }
-    catch (const std::bad_variant_access&) {}
+    catch (const std::bad_variant_access&) {
+    }
 }
 
 int main(int argc, char* argv[]) {
