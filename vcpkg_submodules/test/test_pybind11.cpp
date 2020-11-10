@@ -1,13 +1,9 @@
 #include <pybind11/pybind11.h>
-
+#include <pybind11/embed.h>
 namespace py = pybind11;
-
-int add(int a, int b) {
-    return a + b;
-}
-PYBIND11_MODULE(test_pybind11, m) {
-    m.doc() = "pybind11 example module";
-    // Add bindings here
-    m.def("foo", []() { return "Hello, World!"; });
-    m.def("add", &add, "A function which adds two numbers");
+int main() {
+    py::scoped_interpreter python;
+    py::module t = py::module::import("example");
+    t.attr("add")(1, 2);
+    return 0;
 }

@@ -15,16 +15,18 @@ macro(add_test_library_include name libname)
     check_target_exist(${target_name} ${name})
     string(TOUPPER ${name} UPPER_NAME)
     set(include_target ${UPPER_NAME}_INCLUDE_DIRS)
-    target_include_directories(
-        ${target_name} PRIVATE ${${UPPER_NAME}_INCLUDE_DIRS}
-    )
+    if (NOT ${include_target} MATCHES  "NOTFOUND$")
+        target_include_directories(
+            ${target_name} PRIVATE ${${UPPER_NAME}_INCLUDE_DIRS}
+        )
+    endif()
     set(link_target ${UPPER_NAME}_LIBRARIES)
-    if (NOT ${link_target} STREQUAL "")
+    if (NOT ${UPPER_NAME}_LIBRARIES} MATCHES "NOTFOUND$")
         target_link_libraries(
             ${target_name} PRIVATE ${${UPPER_NAME}_LIBRARIES}
         )
     endif()
-    message("############## echo ${include_target}  ${link_target} ")
+    message("############## echo ${${include_target}} \n ##### ${${link_target}} ")
 endmacro(add_test_library_include)
 
 macro(add_test_header_only_library name libname)
@@ -50,7 +52,7 @@ macro(add_test_library name libname)
     else()
         set(link_target ${libname}::${libname})
     endif()
-    message("define ${ARGV2} ${link_target}")
+    message("define ${libname} ${ARGV2} ${link_target}")
     target_link_libraries(
         ${target_name} PRIVATE
         ${link_target}
