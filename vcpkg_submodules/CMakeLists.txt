@@ -16,27 +16,11 @@ set(CMAKE_TOOLCHAIN_FILE
     ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake
     CACHE STRING "Vcpkg toolchain file")
 message("${CMAKE_CURRENT_SOURCE_DIR}@ ${CMAKE_TOOLCHAIN_FILE}")
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/check.cmake)
 
 find_path(DBG_MACRO_INCLUDE_DIRS "dbg.h")
 
-macro(add_test_library name libname)
-    find_package(${libname} CONFIG REQUIRED)
-    set(target_name test_${name})
-    add_executable(
-        ${target_name}
-        test/test_${name}.cpp
-    )
-    if(${ARGC} GREATER 2)
-        set(link_target ${ARGN})
-    else()
-        set(link_target ${libname}::${libname})
-    endif()
-    message("define ${ARGV2} ${link_target}")
-    target_link_libraries(
-        ${target_name} PRIVATE
-        ${link_target}
-    )
-endmacro(add_test_library)
+
 
 add_test_library(spdlog spdlog)
 add_test_library(scnlib scn scn::scn spdlog::spdlog)
@@ -51,42 +35,7 @@ add_test_library(msgpack msgpack msgpackc msgpackc-cxx fmt::fmt)
 add_test_library(cuckoo libcuckoo libcuckoo)
 add_test_library(abseil absl absl::any absl::base absl::strings fmt::fmt)
 #add_test_library(macro boost)
-macro(add_test_library_include name libname)
-    find_package(${libname} CONFIG REQUIRED)
-    set(target_name test_${name})
-    add_executable(
-        ${target_name}
-        test/test_${name}.cpp
-    )
-    string(TOUPPER ${name} UPPER_NAME)
-    set(include_target ${UPPER_NAME}_INCLUDE_DIRS)
-    target_include_directories(
-        ${target_name} PRIVATE ${${UPPER_NAME}_INCLUDE_DIRS}
-    )
 
-    set(link_target ${UPPER_NAME}_LIBRARIES)
-    target_link_libraries(
-        ${target_name} PRIVATE ${${UPPER_NAME}_LIBRARIES}
-    )
-    message("############## echo ${include_target}  ${link_target} ")
-endmacro(add_test_library_include)
-
-macro(add_test_header_only_library name libname)
-    set(target_name test_${name})
-    add_executable(
-        ${target_name}
-        test/test_${name}.cpp
-    )
-    string(TOUPPER ${name} UPPER_NAME)
-    find_path(${UPPER_NAME}_INCLUDE_DIRS "${name}.h")
-    target_include_directories(
-        ${target_name} PRIVATE ${${UPPER_NAME}_INCLUDE_DIRS}
-    )
-    target_link_libraries(
-        ${target_name} PRIVATE
-        ${ARGV2}
-    )
-endmacro(add_test_header_only_library)
 
 
 add_test_library_include(sockpp sockpp)
