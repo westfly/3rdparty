@@ -20,30 +20,24 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/check.cmake)
 
 find_path(DBG_MACRO_INCLUDE_DIRS "dbg.h")
 
-
-
-add_test_library(spdlog spdlog)
-add_test_library(scnlib scn scn::scn spdlog::spdlog)
 add_test_library(fmt fmt)
 add_test_library(quill quill)
-find_package(GTest CONFIG REQUIRED)
+add_test_library(spdlog spdlog)
+add_test_library(scnlib scn scn::scn spdlog::spdlog)
+add_test_library(gtest GTest GTest::gtest_main)
 add_test_library(folly folly GTest::gtest_main Folly::folly)
 add_test_library(xtensor xtensor xtensor)
 add_test_library(catch Catch2)
 add_test_library(json11 fmt fmt::fmt json11)
 add_test_library(msgpack msgpack msgpackc msgpackc-cxx fmt::fmt)
 add_test_library(cuckoo libcuckoo libcuckoo)
-add_test_library(abseil absl absl::any absl::base absl::strings fmt::fmt)
+add_test_library(abseil absl absl::any absl::base absl::strings fmt::fmt ${DBG_MACRO_INCLUDE_DIRS})
 #add_test_library(macro boost)
-
-
 
 add_test_library_include(sockpp sockpp)
 add_test_library_include(rapidjson RapidJSON)
 add_test_header_only_library(nanobench nanobench)
 add_test_header_only_library(cpptoml cpptoml spdlog::spdlog)
-
-
 
 find_package(pybind11 CONFIG REQUIRED)
 pybind11_add_module(test_pybind11 test/test_pybind11.cpp)
