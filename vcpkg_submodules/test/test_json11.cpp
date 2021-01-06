@@ -13,7 +13,8 @@ int main(int argc, char const* argv[]) {
                 "nn_ivr_dssm_combine_schema_ad":"joint/dssm_2_tower_combine_schema_ad",
                 "nn_ivr_dssm_combine_schema_user":"joint/dssm_2_tower_combine_schema_user"
             },
-            "model":"joint/dssm_2_tower_model"
+            "model":"joint/dssm_2_tower_model",
+            "pfhash": true
         }
     )";
     std::string       err_str;
@@ -26,6 +27,8 @@ int main(int argc, char const* argv[]) {
         for (auto& [key, value] : json["pullms"].object_items()) {
             fmt::print("pullms: {}\n", key);
         }
+        auto pfhash = json["pfhash"].bool_value();
+        fmt::print("pfhash = {}", pfhash);
     }
     catch (std::exception& ex) {
         printf("Json Parse error: %s:%s\n", ex.what(), err_str.c_str());
