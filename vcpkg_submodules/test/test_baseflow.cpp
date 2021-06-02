@@ -6,6 +6,7 @@
 //#include "pprint/pprint.hpp"
 #define DBG_MACRO_NO_WARNING 1
 #include "dbg.h"
+#include "fast_float/fast_float.h"
 #include "spdlog/async.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/spdlog.h"
@@ -13,7 +14,6 @@
 #include "struct.h"
 #include "zip.hpp"
 #include <list>
-
 
 TEST_CASE("baseflow", "[spdlog]") {
     auto file_logger = spdlog::rotating_logger_mt<spdlog::async_factory>(
@@ -78,4 +78,12 @@ TEST_CASE("baseflow_zip", "[zip]") {
         z = x + y;
     }
     dbg(c);
+}
+
+TEST_CASE("baseflow_fastfloat", "[float]") {
+    const std::string input = "3.1416 xyz ";
+    double            result;
+    auto              answer = fast_float::from_chars(
+        input.data(), input.data() + input.size(), result);
+    dbg(fmt::format("ans={} {} {}", result, answer.ptr, answer.ec));
 }
