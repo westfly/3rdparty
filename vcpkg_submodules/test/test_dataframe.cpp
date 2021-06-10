@@ -4,146 +4,206 @@
 #include <DataFrame/DataFrameOperators.h>
 #include <DataFrame/DataFrameStatsVisitors.h>
 #include <DataFrame/RandGen.h>
+#include <fmt/format.h>
+#include <iostream>
+#include <random>
+#include <rapidjson/document.h>
+#include <rapidjson/istreamwrapper.h>
+#include <rapidjson/ostreamwrapper.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include <scn/scn.h>
+
+int split(const std::string_view         str,
+          const std::string_view         delims,
+          bool                           empty_field,
+          std::vector<std::string_view>* output) {
+    for (auto first = str.data(),
+              second = str.data(),
+              last = first + str.size();
+         second != last && first != last;
+         first = second + 1) {
+        second = std::find_first_of(
+            first, last, std::cbegin(delims), std::cend(delims));
+        // printf("%p:%lu:%lu\n", first, last - first, second - first);
+        if (first != second || empty_field)
+            output->emplace_back(first, second - first);
+    }
+    return output->size();
+}
 using MyDataFrame = hmdf::StdDataFrame<unsigned long>;
-struct User {
-    int id;
-    int sex;
+typedef rapidjson::Document Record;
+struct Table {
+    int Init(const std::string& filename) {
+#if 0
+        scn::owning_file file{filename.c_str(), "r"};
+        if (!file.is_open()) {
+            fmt::print("open {} failed\n", filename);
+            return -1;
+        }
+#endif
+        std::ifstream                 fin(filename);
+        std::string                   line;
+        std::vector<std::string_view> field_list;
+        while (getline(fin, line)) {
+            using namespace std::literals;
+            split(line, "|"sv, false, &field_list);
+            if (field_list[1].find("dsp") != std::string_view::npos) {
+                continue;
+            }
+            bool big_data_set = false;
+            if (big_data_set || field_list[0].find("48bc47c808ad437a3f6e5cf0e2c103ee") !=
+                    std::string_view::npos) {
+                fmt::print("new field {}\n", field_list[3]);
+                std::string id(field_list[0]);
+                // json_str_list.emplace(id, field_list[3]);
+                json_str_list.emplace_back(std::string(field_list[3]));
+                MakeRecord(json_str_list.back());
+            }
+        }
+        fmt::print("load {}:{} record from {} \n",
+                   json_str_list.size(),
+                   records.size(),
+                   filename);
+        return 0;
+    }
+    int MakeRecord(const std::string& sv) {
+        rapidjson::Document doc{};
+        doc.ParseInsitu(const_cast<char*>(sv.data()));
+        if (doc.HasParseError()) {
+            fmt::print("Get Error {} and Offset {}\n",
+                       doc.GetParseError(),
+                       doc.GetErrorOffset());
+            return -1;
+        }
+        records.emplace_back(std::move(doc));
+        return 0;
+    }
+    size_t Size() const {
+        return records.size();
+    }
+    auto& At(size_t idx) const {
+        assert(idx <= Size());
+        return records[idx];
+    }
+
+private:
+    // std::map<std::string, std::string> json_str_list;
+    std::vector<std::string> json_str_list;
+    std::vector<Record>      records;
 };
-template<typename I, typename  H, typename CppType, typename ArrType>
-void NumericColumnToDataFrame(const Table& tlb, DataFrame<I, H>& df, int c)
-{
-	const int64_t rows = tlb.num_rows();
-	auto f = tlb.field(c);
-	const string& name = f->name();
-	std::vector<CppType>& vec = df.create_column<CppType>(name.c_str());
-	vec.assign(rows, 0);
-	auto ch_arr = tlb.column(c);
-	const int nchunks = ch_arr->num_chunks();
-	int i = 0;
-	for (int n = 0; n < nchunks; n++)
-	{
-		auto arr = ch_arr->chunk(n);
-		int64_t arr_rows = arr->length();
-		auto typed_arr = std::static_pointer_cast<ArrType>(arr);
-		const CppType* data = typed_arr->raw_values();
-		for (int j = 0; j < arr_rows; j++)
-			vec[i++] = data[j];
-	}
+using namespace hmdf;
+static const char* kTypeNames[] = {
+    "Null", "False", "True", "Object", "Array", "String", "Number"};
+template <typename I, typename H>
+int TableToDataFrame(const Table& tlb, DataFrame<I, H>& df) {
+    const int64_t rows = tlb.Size();
+    if (rows <= 0) {
+        return -1;
+    }
+    // DataFrame requires sequence index.
+    const int kMaxTableSize = 5;
+    df.load_data(DataFrame<I, H>::gen_sequence_index(0, rows));
+    for (int i = 0; i < rows; ++i) {
+        const auto& document = tlb.At(i);
+        for (auto itr = document.MemberBegin(); itr != document.MemberEnd();
+             ++itr) {
+            auto cpp_value_type = itr->value.GetType();
+            auto field_name = itr->name.GetString();
+            switch (cpp_value_type) {
+#define CASE_BUILD(                                                            \
+    cpp_value_type, column_type, df, field_name, field_value, Fn)              \
+    case cpp_value_type: {                                                     \
+        fmt::print(                                                            \
+            "Name:{} TypeName:{}\n", field_name, kTypeNames[cpp_value_type]);  \
+        column_type val;                                                       \
+        if constexpr (std::is_same<column_type, std::string>::value) {         \
+            val = std::string(field_value.GetString(),                         \
+                              field_value.GetStringLength());                  \
+        }                                                                      \
+        else {                                                                 \
+            val = field_value.Get##Fn();                                       \
+        }                                                                      \
+        if (df.has_column(field_name)) {                                       \
+            auto& v = df.template get_column<column_type>(field_name);         \
+            v.push_back(val);                                                  \
+        }                                                                      \
+        else {                                                                 \
+            auto& v = df.template create_column<column_type>(field_name);      \
+            v.push_back(val);                                                  \
+        }                                                                      \
+        break;                                                                 \
+    }
+                CASE_BUILD(5, std::string, df, field_name, itr->value, String);
+                CASE_BUILD(6, int64_t, df, field_name, itr->value, Int64);
+            default: {
+                break;
+            }
+            }
+        }
+    }
+    std::default_random_engine          e;
+    std::uniform_int_distribution<long> u(-30000, 999999);
+    df.template retype_column<std::string, long>(
+        "appid", [&e, &u](const std::string& val) {
+            fmt::print("gooogle {}\n", val);
+            return (std::stoull(val) + u(e));
+        });
+    auto&            column_value = df.template get_column<long>("appid");
+    SumVisitor<long> sum_visitor;
+    auto sum = df.template visit<long>("appid", sum_visitor).get_result();
+    NLargestVisitor<3, long> nl_visitor;
+    df.template visit<long>("appid", nl_visitor);
+    std::string nlargest_str;
+    for (auto& iter : nl_visitor.get_result()) {
+        nlargest_str.append(fmt::format("{}|{},", iter.index, iter.value));
+    }
+    NSmallestVisitor<3, long> ns_visitor;
+    df.template visit<long>("appid", ns_visitor);
+    std::string nsmall_str;
+    for (auto& iter : ns_visitor.get_result()) {
+        nsmall_str.append(fmt::format("{}|{},", iter.index, iter.value));
+    }
+    fmt::print("shape {}:{} column_value {} {} and "
+               "sum()={}\nnlargets={}\nsmallest={}\n",
+               df.shape().first,
+               df.shape().second,
+               column_value.size(),
+               column_value[0],
+               sum,
+               nlargest_str,
+               nsmall_str);
+    // multi-visit
+    // AbsVisitor<long> abs_visistor;
+    MeanVisitor<long> abs_visitor;
+    df.template multi_visit(std::make_pair("appid", &nl_visitor),
+                            std::make_pair("appid", &ns_visitor),
+                            std::make_pair("appid", &abs_visitor),
+                            std::make_pair("appid", &sum_visitor));
+    assert(sum == sum_visitor.get_result());
+    StepRollAdopter<MeanVisitor<long>, long> roller_visitor(MeanVisitor<long>(),
+                                                            1);
+    ReturnVisitor<long> return_visit(return_policy::monetary);
+    df.template sort<long>("time", sort_spec::ascen);
+    df.template single_act_visit<long>("time", return_visit);
+    df.template load_column<long>("time_diff", return_visit.get_result());
+    df.template write<std::ostream, int, long, double, std::string>(std::cout);
+#if 0
+    // groupby
+    auto ndf = df.template groupby1<std::string>(
+        "isexp",
+        LastVisitor<MyDataFrame::IndexType, MyDataFrame::IndexType>(),
+        std::make_tuple("appid", "max", MaxVisitor<long>()),
+        std::make_tuple("appid", "sum", SumVisitor<long>()),
+        std::make_tuple("appid", "min", MinVisitor<long>()));
+    ndf.template write<std::ostream, int, long, double, std::string>(std::cout);
+#endif
+    return 0;
 }
-
-template<typename I, typename  H>
-bool TableToDataFrame(const Table& tlb, DataFrame<I, H>& df)
-{
-	const int64_t rows = tlb.num_rows();
-	const int cols = tlb.num_columns();
-
-	// DataFrame requires sequence index.
-	df.load_data(DataFrame<I, H>::gen_sequence_index(1, rows));
-
-	for (int c = 0; c < cols; c++)
-	{
-		auto f = tlb.field(c);
-		const string& name = f->name();
-		int type_id = f->type()->id();
-		switch (type_id)
-		{
-		case Type::STRING:
-		{
-			std::vector<string>& vec = df.create_column<string>(name.c_str());
-			vec.assign(rows, "");
-			auto ch_arr = tlb.column(c);
-			int nchunks = ch_arr->num_chunks();
-			int i = 0;
-			for (int n = 0; n < nchunks; n++)
-			{
-				auto arr = ch_arr->chunk(n);
-				int64_t arr_rows = arr->length();
-				auto typed_arr = std::static_pointer_cast<arrow::StringArray>(arr);
-				for (int j = 0; j < arr_rows; j++)
-					vec[i++] = typed_arr->GetString(j);
-			}
-			break;
-		}
-		case Type::BOOL:
-		{
-			std::vector<bool>& vec = df.create_column<bool>(name.c_str());
-			vec.assign(rows, false);
-			auto ch_arr = tlb.column(c);
-			int nchunks = ch_arr->num_chunks();
-			int i = 0;
-			for (int n = 0; n < nchunks; n++)
-			{
-				auto arr = ch_arr->chunk(n);
-				int64_t arr_rows = arr->length();
-				auto typed_arr = std::static_pointer_cast<arrow::BooleanArray>(arr);
-				for (int j = 0; j < arr_rows; j++)
-					vec[i++] = typed_arr->GetView(j);
-			}
-			break;
-		}
-		case Type::FLOAT:
-			NumericColumnToDataFrame<I, H, float, arrow::FloatArray>(tlb, df, c);
-			break;
-		case Type::DOUBLE:
-			NumericColumnToDataFrame<I, H, double, arrow::DoubleArray>(tlb, df, c);
-			break;
-		case Type::UINT8:
-			NumericColumnToDataFrame<I, H, uint8_t, arrow::UInt8Array>(tlb, df, c);
-			break;
-		case Type::INT8:
-			NumericColumnToDataFrame<I, H, int8_t, arrow::Int8Array>(tlb, df, c);
-			break;
-		case Type::UINT16:
-			NumericColumnToDataFrame<I, H, uint16_t, arrow::UInt16Array>(tlb, df, c);
-			break;
-		case Type::INT16:
-			NumericColumnToDataFrame<I, H, int16_t, arrow::Int16Array>(tlb, df, c);
-			break;
-		case Type::UINT32:
-			NumericColumnToDataFrame<I, H, uint32_t, arrow::UInt32Array>(tlb, df, c);
-			break;
-		case Type::INT32:
-			NumericColumnToDataFrame<I, H, int32_t, arrow::Int32Array>(tlb, df, c);
-			break;
-		case Type::UINT64:
-			NumericColumnToDataFrame<I, H, uint64_t, arrow::UInt64Array>(tlb, df, c);
-			break;
-		case Type::INT64:
-			NumericColumnToDataFrame<I, H, int64_t, arrow::Int64Array>(tlb, df, c);
-			break;
-		default:
-			assert(false); // unsupported type
-		}
-	}
-
-	return true;
-}
-
-
-int main(int argc, char *argv[])
-{
-	auto fs = make_shared<fs::LocalFileSystem>();
-	auto r_input = fs->OpenInputStream("c:/temp/Test.csv");
-
-	auto pool = default_memory_pool();
-	auto read_options = arrow::csv::ReadOptions::Defaults();
-	auto parse_options = arrow::csv::ParseOptions::Defaults();
-	auto convert_options = arrow::csv::ConvertOptions::Defaults();
-
-	auto r_table_reader = csv::TableReader::Make(pool, r_input.ValueOrDie(),
-		read_options, parse_options, convert_options);
-	auto r_read = r_table_reader.ValueOrDie()->Read();
-	auto pTable = r_read.ValueOrDie();
-
-	PrettyPrintOptions options{0};
-	arrow::PrettyPrint(*pTable, options, &std::cout);
-	//arrow::PrettyPrint(*pTable->schema(), options, &std::cout);
-
-	// SBW 2020.04.03 Attach Arrow table to DataFrame.
-	MyDataFrame df;
-	// df_read.read("c:/temp/Test.csv");
-	TableToDataFrame(*pTable, df);
-	df.write<std::ostream, int, unsigned long, double, std::string>(std::cout);
-
-	return 1;
+int main(int argc, char* argv[]) {
+    Table table;
+    table.Init("../data/cassandra_ups_event.log");
+    MyDataFrame df;
+    TableToDataFrame(table, df);
+    return 0;
 }

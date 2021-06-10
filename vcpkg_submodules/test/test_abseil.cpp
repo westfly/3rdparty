@@ -8,6 +8,8 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <absl/hash/hash.h>
+#include "struct.h"
 
 // https://stackoverflow.com/questions/4546021/remove-char-from-stringstream-and-append-some-data
 std::string Format(std::vector<int>& data) {
@@ -20,20 +22,7 @@ std::string Format(std::vector<int>& data) {
     return douCoh.str();
 }
 const float kUnValidScore = 1.5f;
-struct Feature {
-    int    id;
-    double score;
-    bool   operator<(const Feature& b) const {
-        return score <= b.score;
-    }
-    bool operator>(const Feature& b) const {
-        return score > b.score;
-    }
-};
-std::ostream& operator<<(std::ostream& out, const Feature& v) {
-    out << "id " << v.id << "\tscore " << v.score << std::endl;
-    return out;
-}
+
 int get_top_k(int k, float max_score) {
     std::vector<Feature>             topk;
     std::random_device               rd;
@@ -41,7 +30,7 @@ int get_top_k(int k, float max_score) {
     std::uniform_real_distribution<> real_dis(1.0, 2.0);
     std::uniform_int_distribution<>  int_dis(1, 6);
     int                              MaxLength = 2 * k;
-    std::vector<Feature> strange_list;
+    std::vector<Feature>             strange_list;
     for (int i = 0; i < k; ++i) {
         auto ele = Feature{int_dis(gen), real_dis(gen)};
         if (ele.score >= max_score) {
@@ -57,7 +46,7 @@ int get_top_k(int k, float max_score) {
     for (int i = k; i < MaxLength; ++i) {
         auto score = real_dis(gen);
         auto ele = Feature{int_dis(gen), score};
-        //dbg(fmt::format("{}\t{}", topk.front().score, score));
+        // dbg(fmt::format("{}\t{}", topk.front().score, score));
         if (score >= max_score) {
             strange_list.emplace_back(std::move(ele));
             continue;
@@ -75,7 +64,7 @@ int get_top_k(int k, float max_score) {
     }
     std::sort_heap(topk.begin(), topk.end(), cmp_fn);
     int i = 0;
-    while(topk.size() < k) {
+    while (topk.size() < k) {
         topk.push_back(std::move(strange_list[i]));
         ++i;
     }
@@ -102,5 +91,6 @@ int main() {
     fmt::print("{} {} \n",
                std::tuple_size<std::tuple<std::string>>::value,
                std::tuple_size<std::tuple<void>>::value);
-    return get_top_k(10, kUnValidScore);
+    //get_top_k(10, kUnValidScore);
+    return 0;
 }
