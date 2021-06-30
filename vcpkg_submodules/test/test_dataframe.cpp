@@ -166,7 +166,8 @@ void extractEventNumFea(DataFrame<I, H>& df, long req_ts) {
     for (auto& i : time_vec) {
         i = (req_ts - i) / (24 * 3600);
     }
-    df.template load_column<long>("num_day", time_vec);
+    std::string field_name = "num_day";
+    df.template load_column<long>(field_name, time_vec);
     auto dvec = df.template get_column<long>("num_day");
     // std::for_each(dvec.begin(), dvec.end(), [](const auto &i){std::cout << i
     // << " "; });
