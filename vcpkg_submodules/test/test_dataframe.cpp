@@ -13,6 +13,8 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <scn/scn.h>
+#include "tuple_helper.h"
+#include <DataFrame/RandGen.h>
 
 int split(const std::string_view         str,
           const std::string_view         delims,
