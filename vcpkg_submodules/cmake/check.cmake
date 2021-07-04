@@ -53,7 +53,7 @@ macro(add_test_header_only_library name libname)
     )
     target_link_libraries(
         ${target_name} PRIVATE
-        ${ARGV2}
+        ${ARGN}
     )
 endmacro(add_test_header_only_library)
 
