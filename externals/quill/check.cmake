@@ -20,21 +20,3 @@ CPMAddPackage(
   BUILD_COMMAND     "cd ${DEP_SOURCE_DIR} && make -j30"
   INSTALL_COMMAND   "cd ${DEP_SOURCE_DIR} && make install"
 )
-
-
-if(EXISTS ${DEP_PREFIX}/lib)
-	set(${UP_DEP_NAME}_LIB ${DEP_PREFIX}/lib/lib${DEP_NAME}.a)
-endif()
-if(EXISTS ${DEP_PREFIX}/lib64)
-	set(${UP_DEP_NAME}_LIB ${DEP_PREFIX}/lib64/lib${DEP_NAME}.a)
-endif()
-if(EXISTS ${_DEP_PREFIX}/include)
-	set(${UP_DEP_NAME}_INCLUDE_DIR   ${DEP_PREFIX}/include)
-endif()
-
-message("${DEP_PREFIX}/include ${DEP_PREFIX}")
-
-mark_as_advanced(
-  ${UP_DEP_NAME}_LIBRARIES
-)
-

@@ -25,23 +25,14 @@ macro(MakeAsLibray NAME)
 endmacro()
 
 message("${CMAKE_SOURCE_DIR}")
+include(check/check.cmake)
 include(spdlog/check.cmake)
 include(fmt/check.cmake)
 include(quill/check.cmake)
 include(cxxopts/check.cmake)
 include(scnlib/check.cmake)
 include(Catch2/check.cmake)
-macro(add_test_library name libname)
-    set(target_name test_${name})
-    add_executable(
-        ${target_name}
-        test/test_${name}.cpp
-    )
-    target_link_libraries(
-        ${target_name} PRIVATE
-        ${libname}
-    )
-endmacro(add_test_library)
+
 add_test_library(spdlog spdlog)
 add_test_library(quill quill)
 add_test_library(scnlib scn)
