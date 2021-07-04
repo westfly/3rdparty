@@ -58,6 +58,15 @@ public:
         return std::invoke(c, std::forward<Args>(args)...);
     }
 };
+int TestMacro() {
+#define InnerMacro(a, b, c) printf("%s\t%s\t%s\n", #a, #b, #c);
+#define Macro(id)                                                              \
+    do {                                                                       \
+        id                                                                     \
+    } while (0)
+    Macro(InnerMacro(1, 3, 3));
+    return 0;
+}
 int main(int argc, char* argv[]) {
     test_variant();
     std::array<int, 3> click = {3, 20, 4};
