@@ -97,7 +97,7 @@ private:
 };
 
 using namespace hmdf;
-
+/*
 template <typename I, typename H>
 int extractTopNFea(DataFrame<I, H>& df, std::string type = "Imp") {
     auto df_size = df.get_index().size();
@@ -358,7 +358,7 @@ int CalcCliUpsFea(DataFrame<I, H>& df_clk, DataFrame<I, H>& df_imp) {
     }
     return 0;
 }
-
+*/
 static const char* kTypeNames[] = {
     "Null", "False", "True", "Object", "Array", "String", "Number"};
 template <typename I, typename H>
@@ -480,8 +480,8 @@ int TableToDataFrame(const Table& tlb, DataFrame<I, H>& df) {
         "time",
         [](const std::string& val) -> long { return (std::stol(val)); });
 
-    extractTopNFea(df);
-    extractTopNFeaByTime(df, req_ts); // also modeVisitor
+    //extractTopNFea(df);
+    //extractTopNFeaByTime(df, req_ts); // also modeVisitor
     // extractSessionFea(df, req_ts);
     // extractEventNumFea(df, req_ts);
 
