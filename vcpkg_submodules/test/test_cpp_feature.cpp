@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#define DBG_MACRO_NO_WARNING 1
 #include <dbg.h>
 #include <fmt/format.h>
 #include <string>

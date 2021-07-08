@@ -1,11 +1,12 @@
 // from https://github.com/felixguendling/cista
 // make cista-test-single-header
 #include "cista.h"
-
-#include <dbg.h>
 #include <fmt/format.h>
 #include <rapidcsv.h>
 #define DBG_MACRO_NO_WARNING 1
+#include "utility.hpp"
+#include <dbg.h>
+#include <mio/mmap.hpp>
 namespace rapidcsv {
 template <>
 void Converter<std::string_view>::ToVal(const std::string& pStr,
@@ -26,7 +27,6 @@ void ConvertMutipleCell(const std::string& pStr, MutipleCell& pVal) {
         pVal.col.push_back(std::to_string(val));
     }
 }
-
 #define XConvertTypeOfDocument(cpp_type, fn, ...)                              \
     do {                                                                       \
         auto col = doc.Get##fn<cpp_type>(__VA_ARGS__);                         \
@@ -45,6 +45,7 @@ int RapidCSV() {
     {
         rapidcsv::Document doc("../data/colrowhdr.csv",
                                rapidcsv::LabelParams(0, 0));
+        dbg("get{}", doc.GetColumnNames());
         std::vector<float> close = doc.GetRow<float>("2017-02-22");
         std::cout << "Read " << close.size() << " values." << std::endl;
         dbg(close);
@@ -84,7 +85,24 @@ int RapidCSV() {
     }
     return 0;
 }
+int MIO() {
+    using mmap_source = mio::basic_mmap_source<std::byte>;
+    std::error_code  error;
+    auto             path = "../data/rowhdr.csv";
+    mio::mmap_source ro_mmap;
+    ro_mmap.map(path, error);
+    return 0;
+}
+void TestConverter() {
+    auto        convert = utils::Converter<int>();
+    std::string abc = "123";
+    int         val;
+    convert.ToVal(abc, val);
+    fmt::print("abc {} to {}\n", abc, val);
+}
 int main(int argc, char const* argv[]) {
     RapidCSV();
+    MIO();
+    TestConverter();
     return 0;
 }
